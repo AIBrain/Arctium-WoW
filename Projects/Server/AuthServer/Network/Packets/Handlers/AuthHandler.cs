@@ -15,19 +15,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Linq;
-using AuthServer.Attributes;
-using AuthServer.Constants.Authentication;
-using AuthServer.Constants.Net;
-using AuthServer.Managers;
-using AuthServer.Network.Sessions;
-using Framework.Constants.Account;
-using Framework.Cryptography.BNet;
-using Framework.Misc;
-using Framework.Network.Packets;
-
 namespace AuthServer.Network.Packets.Handlers
 {
+    using System.Linq;
+    using Attributes;
+    using Constants.Authentication;
+    using Constants.Net;
+    using Framework.Constants.Account;
+    using Framework.Cryptography.BNet;
+    using Framework.Misc;
+    using Managers;
+    using Sessions;
+
     class AuthHandler
     {
         public static void SendProofRequest(Client client)
@@ -44,8 +43,8 @@ namespace AuthServer.Network.Packets.Handlers
             // Send two modules (Thumbprint & Password).
             proofRequest.Write(2, 3);
 
-            /// Thumbprint module
-            Manager.ModuleMgr.WriteModuleHeader(client, proofRequest, thumbprintModule);
+            // Thumbprint module
+            ModuleManager.WriteModuleHeader(client, proofRequest, thumbprintModule);
 
             // Data 
             proofRequest.Write(thumbprintModule.Data.ToByteArray());
@@ -53,8 +52,8 @@ namespace AuthServer.Network.Packets.Handlers
             session.SecureRemotePassword = new SRP6a(session.Account.Salt, session.Account.Email, session.Account.PasswordVerifier);
             session.SecureRemotePassword.CalculateB();
 
-            /// Password module
-            Manager.ModuleMgr.WriteModuleHeader(client, proofRequest, passwordModule);
+            // Password module
+            ModuleManager.WriteModuleHeader(client, proofRequest, passwordModule);
 
             // State
             proofRequest.Flush();
@@ -98,7 +97,7 @@ namespace AuthServer.Network.Packets.Handlers
 
                                 riskFingerprint.Write(1, 3);
 
-                                Manager.ModuleMgr.WriteRiskFingerprint(client, riskFingerprint);
+                                ModuleManager.WriteRiskFingerprint(client, riskFingerprint);
 
                                 client.SendPacket(riskFingerprint);
 
@@ -165,7 +164,7 @@ namespace AuthServer.Network.Packets.Handlers
             proofValidation.Write(moduleCount, 3);
 
             /// Password module
-            Manager.ModuleMgr.WriteModuleHeader(client, proofValidation, passwordModule, 161);
+            ModuleManager.WriteModuleHeader(client, proofValidation, passwordModule, 161);
 
             // State
             proofValidation.Flush();
@@ -191,13 +190,13 @@ namespace AuthServer.Network.Packets.Handlers
 
                 gameAccountBuffer.Finish();
 
-                Manager.ModuleMgr.WriteModuleHeader(client, proofValidation, selectedGameAccountModule, gameAccountBuffer.Data.Length);
+                ModuleManager.WriteModuleHeader(client, proofValidation, selectedGameAccountModule, gameAccountBuffer.Data.Length);
 
                 // Data
                 proofValidation.Write(gameAccountBuffer.Data);
             }
             else
-                Manager.ModuleMgr.WriteRiskFingerprint(client, proofValidation);
+                ModuleManager.WriteRiskFingerprint(client, proofValidation);
 
             client.SendPacket(proofValidation);
         }

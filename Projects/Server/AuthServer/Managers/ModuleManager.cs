@@ -30,6 +30,8 @@ using Framework.Network.Packets;
 
 namespace AuthServer.Managers
 {
+    using Network.Packets;
+
     class ModuleManager : Singleton<ModuleManager>
     {
         public readonly List<Module> Modules;
@@ -47,16 +49,15 @@ namespace AuthServer.Managers
 
             var modules = DB.Auth.Select<Module>();
 
-            foreach (var m in modules)
-                if (AddModule(m, Modules))
-                    Log.Message(LogType.Debug, "New auth module '{0}' loaded", m.Hash);
+            foreach ( var m in modules.Where( m => AddModule(m, this.Modules) ) )
+                Log.Message(LogType.Debug, "New auth module '{0}' loaded", m.Hash);
 
             Log.Message(LogType.Debug, "Successfully loaded {0} auth modules", Modules.Count);
 
             IsInitialized = true;
         }
 
-        bool AddModule(Module module, IList list)
+        static bool AddModule(Module module, IList list)
         {
             if (!list.Contains(module))
                 return list.Add(module) != -1;
@@ -64,7 +65,7 @@ namespace AuthServer.Managers
             return false;
         }
 
-        public void WriteModuleHeader(Client client, AuthPacket packet, Module module, int size = 0)
+        public static void WriteModuleHeader(Client client, AuthPacket packet, Module module, int size = 0)
         {
             packet.WriteFourCC(module.Type);
             packet.WriteFourCC("\0\0" + Enum.GetName(typeof(Regions), client.Session.Account.Region));
@@ -72,7 +73,7 @@ namespace AuthServer.Managers
             packet.Write(size == 0 ? module.Size : (uint)size, 10);
         }
 
-        public void WriteRiskFingerprint(Client client, AuthPacket packet)
+        public static void WriteRiskFingerprint(Client client, AuthPacket packet)
         {
             var riskFingerprintModule = client.Modules.SingleOrDefault(m => m.Name == "RiskFingerprint");
 

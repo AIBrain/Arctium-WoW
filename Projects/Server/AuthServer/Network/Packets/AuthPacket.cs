@@ -15,15 +15,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.IO;
-using System.Text;
-using AuthServer.Constants.Net;
-using AuthServer.Network.Packets;
-using Framework.Misc;
-
-namespace Framework.Network.Packets
+namespace AuthServer.Network.Packets
 {
+    using System;
+    using System.IO;
+    using System.Text;
+    using Constants.Net;
+    using Framework.Misc;
+
     public class AuthPacket
     {
         public AuthPacketHeader Header { get; set; }
@@ -37,54 +36,56 @@ namespace Framework.Network.Packets
 
         public AuthPacket()
         {
-            stream = new BinaryWriter(new MemoryStream());
+            this.stream = new BinaryWriter(new MemoryStream());
         }
 
         public AuthPacket(byte[] data, int size)
         {
-            stream = new BinaryReader(new MemoryStream(data));
+            this.stream = new BinaryReader(new MemoryStream(data));
 
-            Header = new AuthPacketHeader();
-            Header.Message = Read<byte>(6);
+            this.Header = new AuthPacketHeader {
+                                                   Message = this.Read< byte >( 6 )
+                                               };
 
-            if (Read<bool>(1))
-                Header.Channel = (AuthChannel)Read<byte>(4);
+            if (this.Read<bool>(1))
+                this.Header.Channel = (AuthChannel)this.Read<byte>(4);
 
-            Header.Message = (ushort)((Header.Message + 0x3F) << (byte)Header.Channel);
+            this.Header.Message = (ushort)((this.Header.Message + 0x3F) << (byte)this.Header.Channel);
 
-            Data = new byte[size];
+            this.Data = new byte[size];
 
-            Buffer.BlockCopy(data, 0, Data, 0, size);
+            Buffer.BlockCopy(data, 0, this.Data, 0, size);
         }
 
         public AuthPacket(AuthServerMessage message, AuthChannel channel = AuthChannel.Authentication)
         {
-            stream = new BinaryWriter(new MemoryStream());
+            this.stream = new BinaryWriter(new MemoryStream());
 
-            Header = new AuthPacketHeader();
-            Header.Message = (ushort)message;
-            Header.Channel = channel;
+            this.Header = new AuthPacketHeader {
+                                                   Message = ( ushort ) message,
+                                                   Channel = channel
+                                               };
 
             var hasChannel = channel != AuthChannel.Authentication;
-            var msg = Header.Message >= 0x7E ? (Header.Message >> (byte)channel) - 0x3F : Header.Message - 0x3F;
+            var msg = this.Header.Message >= 0x7E ? (this.Header.Message >> (byte)channel) - 0x3F : this.Header.Message - 0x3F;
 
-            Write(msg, 6);
-            Write(hasChannel, 1);
+            this.Write(msg, 6);
+            this.Write(hasChannel, 1);
 
             if (hasChannel)
-                Write((byte)Header.Channel, 4);
+                this.Write((byte)this.Header.Channel, 4);
         }
 
         public void Finish()
         {
-            var writer = stream as BinaryWriter;
+            var writer = this.stream as BinaryWriter;
 
-            Data = new byte[writer.BaseStream.Length];
+            this.Data = new byte[writer.BaseStream.Length];
 
             writer.BaseStream.Seek(0, SeekOrigin.Begin);
 
-            for (int i = 0; i < Data.Length; i++)
-                Data[i] = (byte)writer.BaseStream.ReadByte();
+            for (int i = 0; i < this.Data.Length; i++)
+                this.Data[i] = (byte)writer.BaseStream.ReadByte();
 
             writer.Dispose();
         }
@@ -92,7 +93,7 @@ namespace Framework.Network.Packets
         #region Reader
         public T Read<T>()
         {
-            var reader = stream as BinaryReader;
+            var reader = this.stream as BinaryReader;
 
             if (reader == null)
                 throw new InvalidOperationException("");
@@ -102,19 +103,19 @@ namespace Framework.Network.Packets
 
         public byte[] Read(int count)
         {
-            var reader = stream as BinaryReader;
+            var reader = this.stream as BinaryReader;
 
             if (reader == null)
                 throw new InvalidOperationException("");
 
-            ProcessedBytes += count;
+            this.ProcessedBytes += count;
 
             return reader.ReadBytes(count);
         }
 
         public string ReadString(int count)
         {
-            return Encoding.UTF8.GetString(Read(count));
+            return Encoding.UTF8.GetString(this.Read(count));
         }
 
         public T Read<T>(int bits)
@@ -124,14 +125,14 @@ namespace Framework.Network.Packets
 
             while (bits != 0)
             {
-                if ((count % 8) == 0)
+                if ((this.count % 8) == 0)
                 {
-                    bytePart = Read<byte>();
+                    this.bytePart = this.Read<byte>();
 
-                    ProcessedBytes += 1;
+                    this.ProcessedBytes += 1;
                 }
 
-                var shiftedBits = count & 7;
+                var shiftedBits = this.count & 7;
                 bitsToRead = 8 - shiftedBits;
 
                 if (bitsToRead >= bits)
@@ -139,9 +140,9 @@ namespace Framework.Network.Packets
 
                 bits -= bitsToRead;
 
-                value |= (uint)((bytePart >> shiftedBits) & ((byte)(1 << bitsToRead) - 1)) << bits;
+                value |= (uint)((this.bytePart >> shiftedBits) & ((byte)(1 << bitsToRead) - 1)) << bits;
 
-                count += bitsToRead;
+                this.count += bitsToRead;
             }
 
             var type = typeof(T).IsEnum ? typeof(T).GetEnumUnderlyingType() : typeof(T);
@@ -151,18 +152,18 @@ namespace Framework.Network.Packets
 
         public string ReadFourCC()
         {
-            var data = BitConverter.GetBytes(Read<uint>(32));
+            var data = BitConverter.GetBytes(this.Read<uint>(32));
 
             Array.Reverse(data);
 
-            return Encoding.UTF8.GetString(data).Trim(new char[] { '\0' });
+            return Encoding.UTF8.GetString(data).Trim( '\0' );
         }
         #endregion
 
         #region Writer
         public void Write<T>(T value)
         {
-            var writer = stream as BinaryWriter;
+            var writer = this.stream as BinaryWriter;
 
             if (writer == null)
                 throw new InvalidOperationException("");
@@ -199,7 +200,7 @@ namespace Framework.Network.Packets
                 default:
                     if (typeof(T) == typeof(byte[]))
                     {
-                        Flush();
+                        this.Flush();
 
                         var data = value as byte[];
                         writer.Write(data);
@@ -210,7 +211,7 @@ namespace Framework.Network.Packets
 
         public void Write<T>(T value, int bits)
         {
-            var writer = stream as BinaryWriter;
+            var writer = this.stream as BinaryWriter;
 
             var bitsToWrite = 0;
             var shiftedBits = 0;
@@ -220,7 +221,7 @@ namespace Framework.Network.Packets
 
             while (bits != 0)
             {
-                shiftedBits = count & 7;
+                shiftedBits = this.count & 7;
 
                 if (shiftedBits != 0 && writer.BaseStream.Length > 0)
                     writer.BaseStream.Position -= 1;
@@ -230,48 +231,48 @@ namespace Framework.Network.Packets
                 if (bitsToWrite >= bits)
                     bitsToWrite = bits;
 
-                packedByte = (byte)(preByte & ~(ulong)(((1 << bitsToWrite) - 1) << shiftedBits) | (((unpacked >> (bits - bitsToWrite)) & (ulong)((1 << bitsToWrite) - 1)) << shiftedBits));
+                packedByte = (byte)(this.preByte & ~(ulong)(((1 << bitsToWrite) - 1) << shiftedBits) | (((unpacked >> (bits - bitsToWrite)) & (ulong)((1 << bitsToWrite) - 1)) << shiftedBits));
 
-                count += bitsToWrite;
+                this.count += bitsToWrite;
                 bits -= bitsToWrite;
 
                 if (shiftedBits != 0)
-                    preByte = 0;
+                    this.preByte = 0;
 
-                Write(packedByte);
+                this.Write(packedByte);
             }
 
-            preByte = packedByte;
+            this.preByte = packedByte;
         }
 
         public void Flush()
         {
-            var remainingBits = 8 - (count & 7);
+            var remainingBits = 8 - (this.count & 7);
 
             if (remainingBits < 8)
-                Write(0, remainingBits);
+                this.Write(0, remainingBits);
 
-            preByte = 0;
+            this.preByte = 0;
         }
 
         public void WriteString(string data, int bits, bool isCString = true, int additionalCount = 0)
         {
             var bytes = Encoding.UTF8.GetBytes(data);
 
-            Write(bytes.Length + additionalCount, bits);
-            Write(bytes);
+            this.Write(bytes.Length + additionalCount, bits);
+            this.Write(bytes);
 
             if (isCString)
-                Write(new byte[1]);
+                this.Write(new byte[1]);
 
-            Flush();
+            this.Flush();
         }
 
         public void WriteFourCC(string data)
         {
             var bytes = Encoding.UTF8.GetBytes(data);
 
-            Write(bytes);
+            this.Write(bytes);
         }
         #endregion
     }

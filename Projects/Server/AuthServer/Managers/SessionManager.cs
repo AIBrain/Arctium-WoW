@@ -15,14 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-using System.Collections.Concurrent;
-using AuthServer.Network.Sessions;
-using Framework.Database;
-using Framework.Database.Auth.Entities;
-using Framework.Misc;
-
 namespace AuthServer.Managers
 {
+    using System.Collections.Concurrent;
+    using Framework.Database;
+    using Framework.Misc;
+    using Network.Sessions;
+
     class SessionManager : Singleton<SessionManager>
     {
         public ConcurrentDictionary<int, Client> Clients;

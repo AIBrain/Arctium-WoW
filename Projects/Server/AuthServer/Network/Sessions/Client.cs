@@ -22,6 +22,8 @@ using Framework.Network.Packets;
 
 namespace AuthServer.Network.Sessions
 {
+    using Packets;
+
     class Client : IDisposable
     {
         public int Id { get; set; }

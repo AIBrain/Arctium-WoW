@@ -36,7 +36,7 @@ namespace AuthServer.Managers
             var nullState = ModuleMgr != null && RealmMgr != null && SessionMgr != null;
 
             if (nullState)
-                state = nullState && (ModuleMgr.IsInitialized && RealmMgr.IsInitialized && SessionMgr.IsInitialized);
+                state = ModuleMgr.IsInitialized && RealmMgr.IsInitialized && SessionMgr.IsInitialized;
 
             return state;
         }
